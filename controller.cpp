@@ -11,6 +11,16 @@ public:
   Matrix(int row, int col) : Matrix(row, col, false){ }
 
   Matrix(int row, int col, bool ones){
+    this->allocate_matrix(row, col, ones);
+  }
+
+  Matrix(double **data, int row, int col){
+    this->data = data;
+    this->row = row;
+    this->col = col;
+  }
+
+  void allocate_matrix(int row, int col, bool ones){
     this->row = row;
     this->col = col;
 
@@ -25,10 +35,12 @@ public:
     }
   }
 
-  Matrix(double **data, int row, int col){
-    this->data = data;
-    this->row = row;
-    this->col = col;
+  void deallocate_matrix(){
+    for(int i = 0; i < row; i++){
+      delete[] this->data[i];
+    }
+
+    delete[] this->data;
   }
 
   static Matrix * matrix_from_array(double arr[], int n, int r, int c){
@@ -50,72 +62,108 @@ public:
   }
 
   Matrix * multiply(Matrix *other){
-    Matrix *prod = new Matrix(this->row, other->col);
-
+    // Copia a matriz atual para o stack
+    double c_data[this->row][this->col];
+    int c_row = this->row;
+    int c_col = this->col;
     for(int i = 0; i < this->row; i++){
+      for(int j = 0; j < this->col; j++){
+        c_data[i][j] = this->data[i][j];
+      }
+    }
+
+    // Desaloca da memória a matriz
+    this->deallocate_matrix();
+
+    // Aloca na memória a matriz que será o resultado
+    this->allocate_matrix(c_row, other->col, true);
+
+    for(int i = 0; i < c_row; i++){
       for(int j = 0; j < other->col; j++){
-        for(int k = 0; k < this->col; k++){
-          prod->data[i][j] += this->data[i][k] * other->data[k][j];
+        for(int k = 0; k < c_col; k++){
+          this->data[i][j] += c_data[i][k] * other->data[k][j];
         }
       }
     }
 
-    return prod;
+    return this;
   }
 
   Matrix * transpose(){
-    Matrix *transposed = new Matrix(this->col, this->row);
-
-    for(int i = 0; i < this->col; i++){
-      for(int j = 0; j < this->row; j++){
-        transposed->data[i][j] = this->data[j][i];
+    // Copia a matriz atual para o stack
+    double c_data[this->row][this->col];
+    int c_row = this->row;
+    int c_col = this->col;
+    for(int i = 0; i < this->row; i++){
+      for(int j = 0; j < this->col; j++){
+        c_data[i][j] = this->data[i][j];
       }
     }
 
-    return transposed;
+    // Desaloca da memória a matriz
+    this->deallocate_matrix();
+
+    // Aloca na memória a matriz que será o resultado
+    this->allocate_matrix(c_col, c_row, false);
+
+    for(int i = 0; i < c_col; i++){
+      for(int j = 0; j < c_row; j++){
+        this->data[i][j] = c_data[j][i];
+      }
+    }
+
+    return this;
   }
 
   Matrix * invert(){
-    Matrix *inverse = new Matrix(this->row, this->col);
-    double a[this->row * 2][this->col * 2];
+    int c_row = this->row;
+    int c_col = this->col;
+    double a[c_row * 2][c_row * 2];
 
-    for(int i = 0; i < this->row; i++){
-      for(int j = 0; j < this->col; j++){
+    // Copia a matriz atual para o stack (e prepara a matrix auxiliar para o problema)
+    for(int i = 0; i < c_row; i++){
+      for(int j = 0; j < c_row; j++){
         a[i][j] = this->data[i][j];
       }
     }
 
-    for(int i = 0; i < this->row; i++){
-      for(int j = this->row; j < 2 * this->row; j++){
-        if(i == j - this->row) a[i][j] = 1;
+    // Desaloca da memória a matriz
+    this->deallocate_matrix();
+
+    // Aloca na memória a matriz que será o resultado
+    this->allocate_matrix(c_row, c_col, false);
+
+    for(int i = 0; i < c_row; i++){
+      for(int j = c_row; j < 2 * c_row; j++){
+        if(i == j - c_row) a[i][j] = 1;
         else a[i][j] = 0;
       }
     }
 
-    for(int i = 0; i < this->row; i++){
+    for(int i = 0; i < c_row; i++){
       double t = a[i][i];
-      for(int j = i; j < 2 * this->row; j++){
+      for(int j = i; j < 2 * c_row; j++){
         a[i][j] /= t;
       }
 
-      for(int j = 0; j < this->row; j++){
+      for(int j = 0; j < c_row; j++){
         if(i != j){
           t = a[j][i];
 
-          for(int k = 0; k < 2 * this->row; k++){
+          for(int k = 0; k < 2 * c_row; k++){
             a[j][k] -= t * a[i][k];
           }
         }
       }
     }
 
-    for(int i = 0; i < this->row; i++){
-      for(int j = this->row; j < 2 * this->row; j++){
-        inverse->data[i][j - this->row] = a[i][j];
+    for(int i = 0; i < c_row; i++){
+      for(int j = c_row; j < 2 * c_row; j++){
+        this->data[i][j - c_row] = a[i][j];
       }
     }
 
-    return inverse;
+    return this;
   }
 
   void print(){
@@ -128,9 +176,7 @@ public:
   }
 
   ~Matrix(){
-    for(int i = 0; i < row; i++){
-      delete[] this->data[i];
-    }
+    this->deallocate_matrix();
   }
 };
 
@@ -141,7 +187,8 @@ int main(){
 
   std::cout << std::endl;
 
-  m->transpose()->invert()->print();
+  m->transpose()->invert();
+  m->print();
 
   return 0;
 }
