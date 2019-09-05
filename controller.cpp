@@ -82,7 +82,7 @@ public:
   static Matrix * multiply_matrix(Matrix *m1, Matrix*m2){
     Matrix *prod = new Matrix(m1->row, m2->col);
 
-    for(int i = 0; i < m1->col; i++){
+    for(int i = 0; i < m1->row; i++){
       for(int j = 0; j < m2->col; j++){
         for(int k = 0; k < m1->col; k++){
           prod->data[i][j] += m1->data[i][k] * m2->data[k][j];
@@ -103,13 +103,19 @@ public:
 };
 
 int main(){
+  double m1_arr[12] = {-2, -4, 6, 0, -1, 1, -3, 3, 5, 2, 4, 7};
+  Matrix *m1 = Matrix::matrix_from_array(m1_arr, 12, 3, 4);
 
-  double arr[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+  double m2_arr[16] = {8, 9, 6, 10, -1, 0, 11, 1, -2, 5, 2, 3, 4, 7, -4, 12};
+  Matrix *m2 = Matrix::matrix_from_array(m2_arr, 16, 4, 4);
 
-  Matrix *m = Matrix::matrix_from_array(arr, 9, 3, 3);
-  m = MatrixOperations::transpose_matrix(m);
+  m1->print();
+  std::cout << std::endl;
+  m2->print();
+  std::cout << std::endl;
 
-  m->print();
+  Matrix *prod = MatrixOperations::multiply_matrix(m1, m2);
+  prod->print();
 
   return 0;
 }
