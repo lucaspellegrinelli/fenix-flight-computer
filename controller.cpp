@@ -20,6 +20,22 @@ public:
     this->col = col;
   }
 
+  Matrix(double arr[], int n, int row, int col) : Matrix(row, col, true){
+    this->row = row;
+    this->col = col;
+
+    int index = 0;
+    for(int i = 0; i < row; i++){
+      for(int j = 0; j < col; j++){
+        index = i * col + j;
+        if(index < n) this->data[i][j] = arr[index];
+        else break;
+      }
+
+      if(index >= n) break;
+    }
+  }
+
   void allocate_matrix(int row, int col, bool ones){
     this->row = row;
     this->col = col;
@@ -41,24 +57,6 @@ public:
     }
 
     delete[] this->data;
-  }
-
-  static Matrix * matrix_from_array(double arr[], int n, int r, int c){
-    Matrix *m = new Matrix(r, c, true);
-
-    int index = 0;
-    for(int i = 0; i < r; i++){
-      for(int j = 0; j < c; j++){
-        index = i * c + j;
-
-        if(index < n) m->data[i][j] = arr[index];
-        else break;
-      }
-
-      if(index >= n) break;
-    }
-
-    return m;
   }
 
   Matrix * multiply(Matrix *other){
@@ -182,13 +180,15 @@ public:
 
 int main(){
   double m_arr[9] = {1, 3, 3, 1, 4, 3, 1, 3, 4};
-  Matrix *m = Matrix::matrix_from_array(m_arr, 9, 3, 3);
+  Matrix *m = new Matrix(m_arr, 9, 3, 3);
   m->print();
 
   std::cout << std::endl;
 
   m->transpose()->invert();
   m->print();
+
+  delete m;
 
   return 0;
 }
