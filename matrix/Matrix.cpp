@@ -78,6 +78,16 @@ Matrix * Matrix::sum(Matrix *other){
   return this;
 }
 
+Matrix * Matrix::subtract(Matrix *other){
+  for(int i = 0; i < this->row; i++){
+    for(int j = 0; j < this->col; j++){
+      this->data[i][j] -= other->data[i][j];
+    }
+  }
+
+  return this;
+}
+
 Matrix * Matrix::multiply(Matrix *other){
   // Copia a matriz atual para o stack
   double c_data[this->row][this->col];

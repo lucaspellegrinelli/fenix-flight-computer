@@ -27,6 +27,7 @@ public:
   void deallocate_matrix();
 
   Matrix * sum(Matrix *other);
+  Matrix * subtract(Matrix *other);
   Matrix * multiply(Matrix *other);
   Matrix * transpose();
   Matrix * invert();
