@@ -84,85 +84,10 @@ public:
     return prod;
   }
 
-  static Matrix * get_cofactor(Matrix *m, int p, int q, int n){
-    Matrix *cofactor = Matrix::initialize_zero_matrix(m->row, m->col);
-
-    int i = 0;
-    int j = 0;
-
-    for(int r = 0; r < cofactor->row; r++){
-      for(int c = 0; c < cofactor->col; c++){
-        if(r != p && c != q){
-          cofactor->data[i][j++] = m->data[r][c];
-
-          if(j == n - 1){
-            j = 0;
-            i++;
-          }
-        }
-      }
-    }
-
-    return cofactor;
-  }
-
-  static double determinant(Matrix *m, int n){
-    double det = 0;
-
-    if(n == 1) return m->data[0][0];
-
-    Matrix *temp;
-    int sign = 1;
-
-    for(int i = 0; i < n; i++){
-      temp = MatrixOperations::get_cofactor(m, 0, i, n);
-      det += sign * m->data[0][i] * MatrixOperations::determinant(temp, n - 1);
-
-      sign *= -1;
-    }
-
-    return det;
-  }
-
-  static Matrix * adjoint(Matrix *m, int n){
-    Matrix *adj = Matrix::initialize_zero_matrix(n, n);
-
-    if(n == 1){
-      adj->data[0][0] = 1;
-      return adj;
-    }
-
-    int sign = 1;
-    Matrix *temp;
-
-    for(int i = 0; i < n; i++){
-      for(int j = 0; j < n; j++){
-        temp = MatrixOperations::get_cofactor(m, i, j, n);
-        sign = ((i + j) % 2 == 0)? 1 : -1;
-        adj->data[j][i] = sign * MatrixOperations::determinant(temp, n - 1);
-      }
-    }
-
-    return adj;
-  }
-
   static Matrix * matrix_inverse(Matrix *m){
     Matrix *inverse = Matrix::initialize_zero_matrix(m->row, m->col);
 
-    double det = MatrixOperations::determinant(m, m->row);
-
-    if(det == 0){
-      // A matrix é singular e não pode ser inversível
-      return nullptr;
-    }
-
-    Matrix *adj = MatrixOperations::adjoint(m, m->row);
-
-    for(int i = 0; i < inverse->row; i++){
-      for(int j = 0; j < inverse->col; j++){
-        inverse->data[i][j] = adj->data[i][j] / det;
-      }
-    }
+    // TODO
 
     return inverse;
   }
@@ -170,11 +95,11 @@ public:
 
 int main(){
 
-  double arr[6] = {1, 2, 3, 4, 5, 6};
+  double arr[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  Matrix *m = Matrix::matrix_from_array(arr, 6, 2, 3);
+  Matrix *m = Matrix::matrix_from_array(arr, 9, 3, 3);
   m = MatrixOperations::transpose_matrix(m);
-  
+
   m->print();
 
   return 0;
