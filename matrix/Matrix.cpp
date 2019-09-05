@@ -127,12 +127,6 @@ Matrix * Matrix::transpose(){
     }
   }
 
-  // Desaloca da memória a matriz
-  this->deallocate_matrix();
-
-  // Aloca na memória a matriz que será o resultado
-  this->allocate_matrix(c_col, c_row, false);
-
   for(int i = 0; i < c_col; i++){
     for(int j = 0; j < c_row; j++){
       this->data[i][j] = c_data[j][i];
@@ -153,12 +147,6 @@ Matrix * Matrix::invert(){
       a[i][j] = this->data[i][j];
     }
   }
-
-  // Desaloca da memória a matriz
-  this->deallocate_matrix();
-
-  // Aloca na memória a matriz que será o resultado
-  this->allocate_matrix(c_row, c_col, false);
 
   for(int i = 0; i < c_row; i++){
     for(int j = c_row; j < 2 * c_row; j++){
