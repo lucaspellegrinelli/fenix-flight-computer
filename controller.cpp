@@ -93,29 +93,59 @@ public:
     return prod;
   }
 
-  static Matrix * matrix_inverse(Matrix *m){
+  static Matrix * invert_matrix(Matrix *m){
     Matrix *inverse = new Matrix(m->row, m->col);
+    double a[m->row * 2][m->col * 2];
 
-    // TODO
+    for(int i = 0; i < m->row; i++){
+      for(int j = 0; j < m->col; j++){
+        a[i][j] = m->data[i][j];
+      }
+    }
+
+    for(int i = 0; i < m->row; i++){
+      for(int j = m->row; j < 2 * m->row; j++){
+        if(i == j - m->row) a[i][j] = 1;
+        else a[i][j] = 0;
+      }
+    }
+
+    for(int i = 0; i < m->row; i++){
+      double t = a[i][i];
+      for(int j = i; j < 2 * m->row; j++){
+        a[i][j] /= t;
+      }
+
+      for(int j = 0; j < m->row; j++){
+        if(i != j){
+          t = a[j][i];
+
+          for(int k = 0; k < 2 * m->row; k++){
+            a[j][k] -= t * a[i][k];
+          }
+        }
+      }
+    }
+
+    for(int i = 0; i < m->row; i++){
+      for(int j = m->row; j < 2 * m->row; j++){
+        inverse->data[i][j - m->row] = a[i][j];
+      }
+    }
 
     return inverse;
   }
 };
 
 int main(){
-  double m1_arr[12] = {-2, -4, 6, 0, -1, 1, -3, 3, 5, 2, 4, 7};
-  Matrix *m1 = Matrix::matrix_from_array(m1_arr, 12, 3, 4);
+  double m_arr[9] = {1, 3, 3, 1, 4, 3, 1, 3, 4};
+  Matrix *m = Matrix::matrix_from_array(m_arr, 9, 3, 3);
+  m->print();
 
-  double m2_arr[16] = {8, 9, 6, 10, -1, 0, 11, 1, -2, 5, 2, 3, 4, 7, -4, 12};
-  Matrix *m2 = Matrix::matrix_from_array(m2_arr, 16, 4, 4);
-
-  m1->print();
-  std::cout << std::endl;
-  m2->print();
   std::cout << std::endl;
 
-  Matrix *prod = MatrixOperations::multiply_matrix(m1, m2);
-  prod->print();
+  Matrix *inv = MatrixOperations::invert_matrix(m);
+  inv->print();
 
   return 0;
 }
