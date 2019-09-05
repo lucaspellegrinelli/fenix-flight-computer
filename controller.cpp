@@ -49,6 +49,75 @@ public:
     return m;
   }
 
+  Matrix * multiply(Matrix *other){
+    Matrix *prod = new Matrix(this->row, other->col);
+
+    for(int i = 0; i < this->row; i++){
+      for(int j = 0; j < other->col; j++){
+        for(int k = 0; k < this->col; k++){
+          prod->data[i][j] += this->data[i][k] * other->data[k][j];
+        }
+      }
+    }
+
+    return prod;
+  }
+
+  Matrix * transpose(){
+    Matrix *transposed = new Matrix(this->col, this->row);
+
+    for(int i = 0; i < this->col; i++){
+      for(int j = 0; j < this->row; j++){
+        transposed->data[i][j] = this->data[j][i];
+      }
+    }
+
+    return transposed;
+  }
+
+  Matrix * invert(){
+    Matrix *inverse = new Matrix(this->row, this->col);
+    double a[this->row * 2][this->col * 2];
+
+    for(int i = 0; i < this->row; i++){
+      for(int j = 0; j < this->col; j++){
+        a[i][j] = this->data[i][j];
+      }
+    }
+
+    for(int i = 0; i < this->row; i++){
+      for(int j = this->row; j < 2 * this->row; j++){
+        if(i == j - this->row) a[i][j] = 1;
+        else a[i][j] = 0;
+      }
+    }
+
+    for(int i = 0; i < this->row; i++){
+      double t = a[i][i];
+      for(int j = i; j < 2 * this->row; j++){
+        a[i][j] /= t;
+      }
+
+      for(int j = 0; j < this->row; j++){
+        if(i != j){
+          t = a[j][i];
+
+          for(int k = 0; k < 2 * this->row; k++){
+            a[j][k] -= t * a[i][k];
+          }
+        }
+      }
+    }
+
+    for(int i = 0; i < this->row; i++){
+      for(int j = this->row; j < 2 * this->row; j++){
+        inverse->data[i][j - this->row] = a[i][j];
+      }
+    }
+
+    return inverse;
+  }
+
   void print(){
     for(int i = 0; i < this->row; i++){
       for(int j = 0; j < this->col; j++){
@@ -65,78 +134,6 @@ public:
   }
 };
 
-class MatrixOperations{
-public:
-  static Matrix * transpose_matrix(Matrix *m){
-    Matrix *transpose = new Matrix(m->col, m->row);
-
-    for(int i = 0; i < m->col; i++){
-      for(int j = 0; j < m->row; j++){
-        transpose->data[i][j] = m->data[j][i];
-      }
-    }
-
-    return transpose;
-  }
-
-  static Matrix * multiply_matrix(Matrix *m1, Matrix*m2){
-    Matrix *prod = new Matrix(m1->row, m2->col);
-
-    for(int i = 0; i < m1->row; i++){
-      for(int j = 0; j < m2->col; j++){
-        for(int k = 0; k < m1->col; k++){
-          prod->data[i][j] += m1->data[i][k] * m2->data[k][j];
-        }
-      }
-    }
-
-    return prod;
-  }
-
-  static Matrix * invert_matrix(Matrix *m){
-    Matrix *inverse = new Matrix(m->row, m->col);
-    double a[m->row * 2][m->col * 2];
-
-    for(int i = 0; i < m->row; i++){
-      for(int j = 0; j < m->col; j++){
-        a[i][j] = m->data[i][j];
-      }
-    }
-
-    for(int i = 0; i < m->row; i++){
-      for(int j = m->row; j < 2 * m->row; j++){
-        if(i == j - m->row) a[i][j] = 1;
-        else a[i][j] = 0;
-      }
-    }
-
-    for(int i = 0; i < m->row; i++){
-      double t = a[i][i];
-      for(int j = i; j < 2 * m->row; j++){
-        a[i][j] /= t;
-      }
-
-      for(int j = 0; j < m->row; j++){
-        if(i != j){
-          t = a[j][i];
-
-          for(int k = 0; k < 2 * m->row; k++){
-            a[j][k] -= t * a[i][k];
-          }
-        }
-      }
-    }
-
-    for(int i = 0; i < m->row; i++){
-      for(int j = m->row; j < 2 * m->row; j++){
-        inverse->data[i][j - m->row] = a[i][j];
-      }
-    }
-
-    return inverse;
-  }
-};
-
 int main(){
   double m_arr[9] = {1, 3, 3, 1, 4, 3, 1, 3, 4};
   Matrix *m = Matrix::matrix_from_array(m_arr, 9, 3, 3);
@@ -144,8 +141,7 @@ int main(){
 
   std::cout << std::endl;
 
-  Matrix *inv = MatrixOperations::invert_matrix(m);
-  inv->print();
+  m->transpose()->invert()->print();
 
   return 0;
 }
