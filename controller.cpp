@@ -8,33 +8,42 @@ public:
 
   Matrix(){ }
 
+  Matrix(int row, int col) : Matrix(row, col, false){ }
+
+  Matrix(int row, int col, bool ones){
+    this->row = row;
+    this->col = col;
+
+    this->data = new double*[this->row];
+    for(int i = 0; i < this->row; i++){
+      this->data[i] = new double[this->col];
+      if(ones){
+        for(int j = 0; j < this->col; j++){
+          this->data[i][j] = 0;
+        }
+      }
+    }
+  }
+
   Matrix(double **data, int row, int col){
     this->data = data;
     this->row = row;
     this->col = col;
   }
 
-  static Matrix * initialize_zero_matrix(int r, int c){
-    double** zero = new double*[r];
-    for(int i = 0; i < r; i++){
-      zero[i] = new double[c];
-      for(int j = 0; j < c; j++){
-        zero[i][j] = 0;
-      }
-    }
-
-    return new Matrix(zero, r, c);
-  }
-
   static Matrix * matrix_from_array(double arr[], int n, int r, int c){
-    Matrix *m = Matrix::initialize_zero_matrix(r, c);
+    Matrix *m = new Matrix(r, c, true);
+
+    int index = 0;
     for(int i = 0; i < r; i++){
       for(int j = 0; j < c; j++){
-        int index = i * c + j;
+        index = i * c + j;
 
         if(index < n) m->data[i][j] = arr[index];
         else break;
       }
+
+      if(index >= n) break;
     }
 
     return m;
@@ -59,7 +68,7 @@ public:
 class MatrixOperations{
 public:
   static Matrix * transpose_matrix(Matrix *m){
-    Matrix *transpose = Matrix::initialize_zero_matrix(m->col, m->row);
+    Matrix *transpose = new Matrix(m->col, m->row);
 
     for(int i = 0; i < m->col; i++){
       for(int j = 0; j < m->row; j++){
@@ -71,7 +80,7 @@ public:
   }
 
   static Matrix * multiply_matrix(Matrix *m1, Matrix*m2){
-    Matrix *prod = Matrix::initialize_zero_matrix(m1->row, m2->col);
+    Matrix *prod = new Matrix(m1->row, m2->col);
 
     for(int i = 0; i < m1->col; i++){
       for(int j = 0; j < m2->col; j++){
@@ -85,7 +94,7 @@ public:
   }
 
   static Matrix * matrix_inverse(Matrix *m){
-    Matrix *inverse = Matrix::initialize_zero_matrix(m->row, m->col);
+    Matrix *inverse = new Matrix(m->row, m->col);
 
     // TODO
 
