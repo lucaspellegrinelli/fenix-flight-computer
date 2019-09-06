@@ -181,6 +181,17 @@ Matrix * Matrix::invert(){
   return this;
 }
 
+Matrix * Matrix::copy(){
+  Matrix *c = Matrix::build_matrix(this->row, this->col);
+  for(int i = 0; i < this->row; i++){
+    for(int j = 0; j < this->col; j++){
+      c->data[i][j] = this->data[i][j];
+    }
+  }
+
+  return c;
+}
+
 Matrix::~Matrix(){
   this->deallocate_matrix();
 }

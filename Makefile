@@ -2,7 +2,7 @@ filenames := controller
 files := $(strip $(foreach f,$(filenames),$(wildcard $(f))))
 
 all:
-	g++ controller.cpp matrix/Matrix.cpp matrix/Matrix.h -o controller
+	g++ controller.cpp Matrix.cpp Matrix.h -o controller
 
 clean:
 ifneq ($(files),)

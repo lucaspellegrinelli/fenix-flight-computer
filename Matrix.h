@@ -32,6 +32,8 @@ public:
   Matrix * transpose();
   Matrix * invert();
 
+  Matrix * copy();
+
   ~Matrix();
 };
 
