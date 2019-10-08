@@ -1,0 +1,113 @@
+/*
+  Testes para MPU9250.h
+  Lucas Pellegrinelli
+
+  Esse arquivo NÃO tem a intenção de fazer a conexão entre o hardware do
+  MPU9250 com o arduino. O propósito desse código é simular o .h importado
+  pelo código principal do controlador do PC de Bordo e injetar dados artificiais
+  de um lançamento para estudar e verificar bugs em um lançamento sem precisar
+  fazer de fato o lançamento.
+
+  A ideia é que para cada um dos sensores do MPU9250, teremos um arquivo .txt
+  que irá conter cada uma dos valores artificiais no lançamento artificial.
+  Por exemplo, para a variável "Aceleração X" do sensor, teremos um arquivo
+  "aceleracao_x.txt" que terá os dados da aceleração no eixo X durante o lançamento
+  artificial e será o output da função "IMU.getAccelX_mss()".
+*/
+
+#include <string>
+#include <fstream>
+
+#include "arduino_consts.h"
+
+class MPU9250{
+public:
+  // Arquivos de leitura dos dados sintéticos
+  std::ifstream aceleracao_file;
+  std::ifstream giroscopio_file;
+  std::ifstream orientacao_file;
+  std::ifstream temperatura_file;
+
+  // Dados lidos dos arquivos dos dados sintéticos
+  double acel_x = 0, acel_y = 0, acel_z = 0;
+  double rot_x = 0, rot_y = 0, rot_z = 0;
+  double orie_x = 0, orie_y = 0, orie_z = 0;
+  double temperatura = 0;
+  int acel_ms = 0, rot_ms = 0, orien_ms = 0, temp_ms = 0;
+
+  // Globais para configurar o que será lido
+  int refresh_clock_ms = 20;
+
+  // Construtor que recebia um objeto do tipo wire e um endereço. Como no PC
+  // de Bordo o objeto wire não foi utilizado, simplifiquei para um inteiro
+  MPU9250(int wire, int address){
+    aceleracao_file.open("Dados/mpu9250_aceleracao.txt");
+    giroscopio_file.open("Dados/mpu9250_giroscopio.txt");
+    orientacao_file.open("Dados/mpu9250_orientacao.txt");
+    temperatura_file.open("Dados/mpu9250_temperatura.txt");
+  }
+
+  // Range das váriaveis
+  static int ACCEL_RANGE_8G;
+  static int GYRO_RANGE_500DPS;
+  static int DLPF_BANDWIDTH_20HZ;
+
+  // Código que era responsável por inicializar o módulo e retornar um número
+  // menor que 0 caso desse algum problema
+  int begin(){ return 0; }
+
+  // Definições dos métodos de setar o range das variáveis
+  void setAccelRange(int range){ }
+  void setGyroRange(int range){ }
+  void setDlpfBandwidth(int bandwidth){ }
+  void setSrd(int a){
+    if(a == 19){
+      this->refresh_clock_ms += 20;
+    }
+  }
+
+  // Método que lê os novos dados do sensor (no nosso caso, os novos dados dos
+  // arquivos .txt)
+  void readSensor(){
+    if(current_ms % this->refresh_clock_ms == 0){
+      int acel_ms, rot_ms, orien_ms, temp_ms;
+
+      // Vai lendo tudo do arquivo até chegar na linha que corresponde ao tempo
+      // mais próximo do atual
+      while(aceleracao_file.peek() != EOF && this->acel_ms < current_ms){
+        aceleracao_file >> this->acel_ms >> this->acel_x >> this->acel_y >> this->acel_z;
+      }
+
+      while(giroscopio_file.peek() != EOF && this->rot_ms < current_ms){
+        giroscopio_file >> this->rot_ms >> this->rot_x >> this->rot_y >> this->rot_z;
+      }
+
+      while(orientacao_file.peek() != EOF && this->orien_ms < current_ms){
+        orientacao_file >> this->orien_ms >> this->orie_x >> this->orie_y >> this->orie_z;
+      }
+
+      while(temperatura_file.peek() != EOF && this->temp_ms < current_ms){
+        temperatura_file >> this->temp_ms >> this->temperatura;
+      }
+    }
+  }
+
+  // Funçoes que retornam os valores lidos
+  double getAccelX_mss(){ return acel_x; };
+  double getAccelY_mss(){ return acel_y; };
+  double getAccelZ_mss(){ return acel_z; };
+
+  double getGyroX_rads(){ return rot_x; };
+  double getGyroY_rads(){ return rot_y; };
+  double getGyroZ_rads(){ return rot_z; };
+
+  double getMagX_uT(){ return orie_x; };
+  double getMagY_uT(){ return orie_y; };
+  double getMagZ_uT(){ return orie_z; };
+
+  double getTemperature_C(){ return this->temperatura; };
+};
+
+extern int MPU9250::ACCEL_RANGE_8G;
+extern int MPU9250::GYRO_RANGE_500DPS;
+extern int MPU9250::DLPF_BANDWIDTH_20HZ;
