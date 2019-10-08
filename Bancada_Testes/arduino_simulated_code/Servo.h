@@ -24,7 +24,7 @@ public:
   void attach(int pin){ this->pin = pin; }
 
   void write(int a){
-    std::cout << "Servo [pin " << this->pin << "] write(" << a << ")" << std::endl;
+    std::cout << current_ms << "ms - Servo [pin " << this->pin << "] write(" << a << ")" << std::endl;
   }
 };
 
