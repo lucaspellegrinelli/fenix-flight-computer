@@ -1,18 +1,19 @@
-/*
-  Lucas Pellegrinelli
-*/
-
 #include "filtro_kalman.h"
 
+EstadoKalman::EstadoKalman(){ }
+
+EstadoKalman::EstadoKalman(float valor, float erro_cov, float ruido_cov_bruto, float ruido_cov_processado){
+  this->valor = valor;
+  this->ganho_kalman = 0;
+  this->erro_cov = erro_cov;
+  this->ruido_cov_bruto = ruido_cov_bruto;
+  this->ruido_cov_processado = ruido_cov_processado;
+}
+
+FiltroKalman::FiltroKalman(){ }
+
 EstadoKalman* FiltroKalman::inicializar(float valor_inicial){
-  EstadoKalman* estado;
-
-  estado.valor = valor_inicial;
-  estado.erro_cov = KALMAN_ERRO;
-  estado.ruido_cov_bruto = KALMAN_RUIDO_BRUTO;
-  estado.ruido_cov_processado = KALMAN_RUIDO_PROCESADO;
-
-  return estado;
+  return new EstadoKalman(valor_inicial, KALMAN_ERRO, KALMAN_RUIDO_BRUTO, KALMAN_RUIDO_PROCESADO);
 }
 
 void FiltroKalman::atualizar(EstadoKalman* estado, float medicao){

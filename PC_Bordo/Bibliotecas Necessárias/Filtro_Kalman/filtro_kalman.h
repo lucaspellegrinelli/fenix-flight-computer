@@ -1,10 +1,6 @@
 #ifndef FILTRO_KALMAN_H
 #define FILTRO_KALMAN_H
 
-/*
-  Lucas Pellegrinelli
-*/
-
 #define KALMAN_RUIDO_PROCESADO 0.01
 #define KALMAN_RUIDO_BRUTO 0.25
 #define KALMAN_ERRO 1
@@ -15,7 +11,8 @@
 
 class EstadoKalman{
 public:
-  EstadoKalman(){ };
+  EstadoKalman();
+  EstadoKalman(float valor, float erro_cov, float ruido_cov_bruto, float ruido_cov_processado);
   float valor;
   float ganho_kalman;
   float erro_cov;
@@ -27,7 +24,7 @@ class FiltroKalman{
 public:
   FiltroKalman();
 
-  static KalmanSaida* inicializar(float valor_inicial);
+  static EstadoKalman* inicializar(float valor_inicial);
   static void atualizar(EstadoKalman* estado, float medicao);
 };
 

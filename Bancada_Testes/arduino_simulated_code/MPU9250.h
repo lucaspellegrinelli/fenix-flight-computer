@@ -23,17 +23,14 @@
 class MPU9250{
 public:
   // Arquivos de leitura dos dados sintéticos
-  std::ifstream aceleracao_file;
-  std::ifstream giroscopio_file;
-  std::ifstream orientacao_file;
-  std::ifstream temperatura_file;
+  std::ifstream sensor_file;
 
   // Dados lidos dos arquivos dos dados sintéticos
-  double acel_x = 0, acel_y = 0, acel_z = 0;
-  double rot_x = 0, rot_y = 0, rot_z = 0;
-  double orie_x = 0, orie_y = 0, orie_z = 0;
-  double temperatura = 0;
-  int acel_ms = 0, rot_ms = 0, orien_ms = 0, temp_ms = 0;
+  float acel_x = 0, acel_y = 0, acel_z = 0;
+  float rot_x = 0, rot_y = 0, rot_z = 0;
+  float orie_x = 0, orie_y = 0, orie_z = 0;
+  float temperatura = 0;
+  long reading_ms = 0;
 
   // Globais para configurar o que será lido
   int refresh_clock_ms = 20;
@@ -41,10 +38,7 @@ public:
   // Construtor que recebia um objeto do tipo wire e um endereço. Como no PC
   // de Bordo o objeto wire não foi utilizado, simplifiquei para um inteiro
   MPU9250(int wire, int address){
-    aceleracao_file.open("Dados/mpu9250_aceleracao.txt");
-    giroscopio_file.open("Dados/mpu9250_giroscopio.txt");
-    orientacao_file.open("Dados/mpu9250_orientacao.txt");
-    temperatura_file.open("Dados/mpu9250_temperatura.txt");
+    sensor_file.open("Dados/mpu9250.txt");
   }
 
   // Range das váriaveis
@@ -69,41 +63,25 @@ public:
   // Método que lê os novos dados do sensor (no nosso caso, os novos dados dos
   // arquivos .txt)
   void readSensor(){
-    if(current_ms % this->refresh_clock_ms == 0){
-      int acel_ms, rot_ms, orien_ms, temp_ms;
-
-      // Vai lendo tudo do arquivo até chegar na linha que corresponde ao tempo
-      // mais próximo do atual
-      while(aceleracao_file.peek() != EOF && this->acel_ms < current_ms){
-        aceleracao_file >> this->acel_ms >> this->acel_x >> this->acel_y >> this->acel_z;
-      }
-
-      while(giroscopio_file.peek() != EOF && this->rot_ms < current_ms){
-        giroscopio_file >> this->rot_ms >> this->rot_x >> this->rot_y >> this->rot_z;
-      }
-
-      while(orientacao_file.peek() != EOF && this->orien_ms < current_ms){
-        orientacao_file >> this->orien_ms >> this->orie_x >> this->orie_y >> this->orie_z;
-      }
-
-      while(temperatura_file.peek() != EOF && this->temp_ms < current_ms){
-        temperatura_file >> this->temp_ms >> this->temperatura;
-      }
-    }
+    sensor_file >> this->reading_ms;
+    sensor_file >> this->acel_x >> this->acel_y >> this->acel_z;
+    sensor_file >> this->rot_x >> this->rot_y >> this->rot_z;
+    sensor_file >> this->orie_x >> this->orie_y >> this->orie_z;
+    sensor_file >> this->temperatura;
   }
 
   // Funçoes que retornam os valores lidos
-  double getAccelX_mss(){ return acel_x; };
-  double getAccelY_mss(){ return acel_y; };
-  double getAccelZ_mss(){ return acel_z; };
+  double getAccelX_mss(){ return this->acel_x; };
+  double getAccelY_mss(){ return this->acel_y; };
+  double getAccelZ_mss(){ return this->acel_z; };
 
-  double getGyroX_rads(){ return rot_x; };
-  double getGyroY_rads(){ return rot_y; };
-  double getGyroZ_rads(){ return rot_z; };
+  double getGyroX_rads(){ return this->rot_x; };
+  double getGyroY_rads(){ return this->rot_y; };
+  double getGyroZ_rads(){ return this->rot_z; };
 
-  double getMagX_uT(){ return orie_x; };
-  double getMagY_uT(){ return orie_y; };
-  double getMagZ_uT(){ return orie_z; };
+  double getMagX_uT(){ return this->orie_x; };
+  double getMagY_uT(){ return this->orie_y; };
+  double getMagZ_uT(){ return this->orie_z; };
 
   double getTemperature_C(){ return this->temperatura; };
 };

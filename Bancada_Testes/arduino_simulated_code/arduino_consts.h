@@ -23,9 +23,9 @@ public:
   SerialCaller(){ }
   void begin(int freq){ }
   void print(std::string text){ std::cout << text; }
-  void print(int text){ std::cout << text; }
+  void print(float text){ std::cout << text; }
   void println(std::string text){ std::cout << text << std::endl; }
-  void println(int text){ std::cout << text << std::endl; }
+  void println(float text){ std::cout << text << std::endl; }
 };
 
 extern SerialCaller Serial;
@@ -39,12 +39,12 @@ int current_ms;
 extern void delay(int ns);
 void delay(int ms){
   current_ms += ms;
-  struct timespec req = {0};
-  time_t sec = (int)(ms / 1000.0);
-  ms = ms - (sec * 1000.0);
-  req.tv_sec = sec;
-  req.tv_nsec = ms * 1000000L;
-  while(nanosleep(&req, &req) == -1) continue;
+  // struct timespec req = {0};
+  // time_t sec = (int)(ms / 1000.0);
+  // ms = ms - (sec * 1000.0);
+  // req.tv_sec = sec;
+  // req.tv_nsec = ms * 1000000L;
+  // while(nanosleep(&req, &req) == -1) continue;
 }
 
 #endif
