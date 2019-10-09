@@ -3,7 +3,6 @@
 
 #include "MPU9250.h"
 #include "Servo.h"
-
 #include "filtro_kalman.h"
 
 /* ------- DEFINIÇÃO DE CONSTANTES -------- */
@@ -27,6 +26,7 @@ unsigned long ms_apogeu = -1;
 void atualizar_leituras_imu();
 bool is_apogeu();
 
+/* ------- DEFINIÇÃO DE FUNÇÕES DE LOG -------- */
 void relatar_leitura(std::string descricao, float valor);
 void relatar_evento(std::string descricao);
 void relatar_escrita(std::string descricao, float valor);
@@ -84,6 +84,7 @@ bool is_apogeu(){
   }
 }
 
+/* ------- DEFINIÇÃO DE FUNÇÕES DE LOG -------- */
 void relatar_evento(std::string descricao){
   // 0ms - Descricao
   Serial.print(current_ms);
