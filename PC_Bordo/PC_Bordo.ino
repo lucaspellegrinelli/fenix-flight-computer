@@ -1,4 +1,5 @@
 #include <math.h>
+#include <string>
 
 #include "MPU9250.h"
 #include "Servo.h"
@@ -7,6 +8,7 @@
 
 /* ------- DEFINIÇÃO DE CONSTANTES -------- */
 #define FAIXA_ACELERACAO_APOGEU 0.15
+#define TEMPO_EJECAO_POS_APOGEU 500
 
 /* ------- DEFINIÇÃO DE OBJETOS DE MÓDULOS -------- */
 MPU9250 IMU(Wire, 0x68);
@@ -16,9 +18,18 @@ Servo servo;
 EstadoKalman* MPU9250_ABS_ACEL_KALMAN;
 double aceleracao_absoluta = 1;
 
+/* ------- DEFINIÇÃO DE VARIÁVEIS PARA CONTROLE DE APOGEU -------- */
+bool ejecao_disparada = false;
+bool apogeu_pendente = false;
+unsigned long ms_apogeu = -1;
+
 /* ------- DEFINIÇÃO DE FUNÇÕES FUTURAS -------- */
 void atualizar_leituras_imu();
 bool is_apogeu();
+
+void relatar_leitura(std::string descricao, float valor);
+void relatar_evento(std::string descricao);
+void relatar_escrita(std::string descricao, float valor);
 
 /* ------- DEFINIÇÃO DO MÉTODO SETUP -------- */
 void setup() {
@@ -39,8 +50,12 @@ void setup() {
 void loop(){
   atualizar_leituras_imu();
 
-  if(is_apogeu()){
+  relatar_leitura("Aceleração absoluta com Kalman", aceleracao_absoluta * 9.80665);
+
+  if(is_apogeu() && !ejecao_disparada){
+    ejecao_disparada = true;
     servo.write(10);
+    relatar_escrita("Servo [pin 9]", 10);
   }
 
   delay(20);
@@ -56,5 +71,40 @@ void atualizar_leituras_imu(){
 }
 
 bool is_apogeu(){
-  return aceleracao_absoluta < FAIXA_ACELERACAO_APOGEU;
+  if(!apogeu_pendente && aceleracao_absoluta < FAIXA_ACELERACAO_APOGEU){
+    relatar_evento("Apogeu detectado");
+
+    apogeu_pendente = true;
+    ms_apogeu = millis();
+    return false;
+  }
+
+  if(apogeu_pendente && (millis() - ms_apogeu) >= TEMPO_EJECAO_POS_APOGEU){
+    return true;
+  }
+}
+
+void relatar_evento(std::string descricao){
+  // 0ms - Descricao
+  Serial.print(current_ms);
+  Serial.print("ms - ");
+  Serial.println(descricao);
+}
+
+void relatar_leitura(std::string descricao, float valor){
+  // 0ms - Descricao - read - 0.2234343
+  Serial.print(current_ms);
+  Serial.print("ms - ");
+  Serial.print(descricao);
+  Serial.print(" - read - ");
+  Serial.println(valor);
+}
+
+void relatar_escrita(std::string descricao, float valor){
+  // 0ms - Descricao - write - 0.2234343
+  Serial.print(current_ms);
+  Serial.print("ms - ");
+  Serial.print(descricao);
+  Serial.print(" - write - ");
+  Serial.println(valor);
 }

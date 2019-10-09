@@ -47,4 +47,9 @@ void delay(int ms){
   // while(nanosleep(&req, &req) == -1) continue;
 }
 
+extern int millis();
+int millis(){
+  return current_ms;
+}
+
 #endif
