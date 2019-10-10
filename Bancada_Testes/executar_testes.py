@@ -18,7 +18,7 @@ def gerar_dados(noise):
     else:
       acel = [0, -9.8, 0]
     acel[1] += 9.8 # Correcao do acelerometro
-    acel[1] += np.random.poisson(15, 1)[0] - 15 # Adiciona ruído
+    # acel[1] += np.random.poisson(5, 1)[0] - 5 # Adiciona ruído
     acel_str = " ".join(str(a) for a in acel)
     rot_str = " ".join(str(a) for a in [0, 0, 0])
     orien_str = " ".join(str(a) for a in [0, 0, 0])

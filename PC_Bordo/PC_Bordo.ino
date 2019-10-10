@@ -6,8 +6,10 @@
 #include "filtro_kalman.h"
 
 /* ------- DEFINIÇÃO DE CONSTANTES -------- */
-#define FAIXA_ACELERACAO_NULA 0.3
-#define TEMPO_EJECAO_POS_FIM_PROPULSAO 6000 // Tempo de precaução de ejeção pós fim da propulsão caso o apogeu não seja detectado
+// Se a aceleração for <= a esse valor, interpretaremos como aceleração 0 (fim da propulsão).
+#define FAIXA_ACELERACAO_NULA 0.15
+// Tempo de precaução de ejeção pós fim da propulsão caso o apogeu não seja detectado
+#define TEMPO_EJECAO_POS_FIM_PROPULSAO 6000
 
 /* ------- DEFINIÇÃO DE OBJETOS DE MÓDULOS -------- */
 MPU9250 IMU(Wire, 0x68);
@@ -52,7 +54,7 @@ void setup() {
 void loop(){
   atualizar_leituras_imu();
 
-  relatar_leitura("Aceleração absoluta com Kalman", aceleracao_absoluta * 9.80665);
+  relatar_leitura("Aceleração lida com Kalman", aceleracao_absoluta * 9.80665);
 
   teste_fim_propulsao();
   teste_apogeu();
