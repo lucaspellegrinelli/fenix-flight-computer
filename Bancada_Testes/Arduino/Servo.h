@@ -12,18 +12,18 @@
   fazer de fato o lançamento.
 */
 
-#include "arduino_consts.h"
+#include "SensorFalso.h"
 
-#include <iostream>
-
-class Servo{
+class Servo : public SensorFalso{
 public:
-  Servo(){ }
+  Servo() : SensorFalso("", 0){ }
 
   int pin = -1;
   void attach(int pin){ this->pin = pin; }
 
-  void write(int a){ }
+  void write(int a){
+    relatar_escrita("Servo [pin " + std::to_string(this->pin) + "]", a);
+  }
 };
 
 #endif

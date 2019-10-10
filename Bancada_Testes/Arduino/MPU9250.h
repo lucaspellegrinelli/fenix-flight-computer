@@ -15,59 +15,54 @@
   artificial e será o output da função "IMU.getAccelX_mss()".
 */
 
-#include <string>
-#include <fstream>
+#include "SensorFalso.h"
 
-#include "arduino_consts.h"
-
-class MPU9250{
+class MPU9250 : public SensorFalso{
 public:
-  // Arquivos de leitura dos dados sintéticos
-  std::ifstream sensor_file;
-
   // Dados lidos dos arquivos dos dados sintéticos
   float acel_x = 0, acel_y = 0, acel_z = 0;
   float rot_x = 0, rot_y = 0, rot_z = 0;
   float orie_x = 0, orie_y = 0, orie_z = 0;
   float temperatura = 0;
-  long reading_ms = 0;
-
-  // Globais para configurar o que será lido
-  int refresh_clock_ms = 20;
+  float reading_ms = 0;
 
   // Construtor que recebia um objeto do tipo wire e um endereço. Como no PC
   // de Bordo o objeto wire não foi utilizado, simplifiquei para um inteiro
-  MPU9250(int wire, int address){
-    sensor_file.open("Dados/mpu9250.txt");
-  }
+  MPU9250(int wire, int address) : SensorFalso("Dados/mpu9250.txt", 20){ }
 
   // Range das váriaveis
   static int ACCEL_RANGE_8G;
   static int GYRO_RANGE_500DPS;
   static int DLPF_BANDWIDTH_20HZ;
 
-  // Código que era responsável por inicializar o módulo e retornar um número
-  // menor que 0 caso desse algum problema
+  // Funcoes que no nosso caso não vão fazer nada
   int begin(){ return 0; }
-
-  // Definições dos métodos de setar o range das variáveis
   void setAccelRange(int range){ }
   void setGyroRange(int range){ }
   void setDlpfBandwidth(int bandwidth){ }
-  void setSrd(int a){
-    if(a == 19){
-      this->refresh_clock_ms += 20;
-    }
-  }
+  void setSrd(int a){ }
 
   // Método que lê os novos dados do sensor (no nosso caso, os novos dados dos
   // arquivos .txt)
   void readSensor(){
-    sensor_file >> this->reading_ms;
-    sensor_file >> this->acel_x >> this->acel_y >> this->acel_z;
-    sensor_file >> this->rot_x >> this->rot_y >> this->rot_z;
-    sensor_file >> this->orie_x >> this->orie_y >> this->orie_z;
-    sensor_file >> this->temperatura;
+    float *leituras = new float[11];
+    ler_sensor(leituras);
+
+    this->reading_ms = leituras[0];
+    this->acel_x = leituras[1];
+    this->acel_y = leituras[2];
+    this->acel_z = leituras[3];
+    this->rot_x = leituras[4];
+    this->rot_y = leituras[5];
+    this->rot_z = leituras[6];
+    this->orie_x = leituras[7];
+    this->orie_y = leituras[8];
+    this->orie_z = leituras[9];
+    this->temperatura = leituras[10];
+
+    relatar_leitura("Aceleracao bruta", acel_y);
+
+    delete leituras;
   }
 
   // Funçoes que retornam os valores lidos

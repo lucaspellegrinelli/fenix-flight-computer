@@ -17,6 +17,10 @@
 // MPU9250
 #define Wire 0
 
+// Contador do tempo atual em ms
+extern int current_ms;
+int current_ms;
+
 // Define um objeto para substituir o Serial.print para o cout do iostream
 class SerialCaller{
 public:
@@ -24,16 +28,12 @@ public:
   void begin(int freq){ }
   void print(std::string text){ std::cout << text; }
   void print(float text){ std::cout << text; }
-  void println(std::string text){ std::cout << text << std::endl; }
-  void println(float text){ std::cout << text << std::endl; }
+  void println(std::string text){ std::cout << text << " - " << current_ms << "ms" << std::endl; }
+  void println(float text){ std::cout << text << " - " << current_ms << "ms" << std::endl; }
 };
 
 extern SerialCaller Serial;
 SerialCaller Serial;
-
-// Contador do tempo atual em ms
-extern int current_ms;
-int current_ms;
 
 // Cria o método delay do arduino
 extern void delay(int ns);
@@ -50,6 +50,24 @@ void delay(int ms){
 extern int millis();
 int millis(){
   return current_ms;
+}
+
+extern void relatar_leitura();
+void relatar_leitura(std::string descricao, float valor){
+  // [BANCADA_TESTES_LOG] Descricao - read - 0.2234343 - 0ms
+  Serial.print("[BANCADA_TESTES_LOG] ");
+  Serial.print(descricao);
+  Serial.print(" - read - ");
+  Serial.println(valor);
+}
+
+extern void relatar_escrita();
+void relatar_escrita(std::string descricao, float valor){
+  // [BANCADA_TESTES_LOG] Descricao - write - 0.2234343 - 0ms
+  Serial.print("[BANCADA_TESTES_LOG] ");
+  Serial.print(descricao);
+  Serial.print(" - write - ");
+  Serial.println(valor);
 }
 
 #endif

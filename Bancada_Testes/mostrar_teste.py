@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*- 
+
 import os
 import random
 import numpy as np
@@ -13,13 +15,13 @@ DADOS_MPU9250 = "Dados/mpu9250.txt"
 # https://www.youtube.com/watch?v=7WYBVW2gnr8
 def gerar_dados():
   def gerar_acel_y(t):
-    if t < 1000:
+    if t < 1000.0:
       return 9.8
-    elif t < 3000:
-      x = (t - 1000) / 2000
+    elif t < 3000.0:
+      x = (t - 1000.0) / 2000.0
       return 103.88*x**3 - 143.81*x**2 - 20.23*x + 49.54 + 9.8
     else:
-      return 0
+      return 0.0
 
   f_mpu9250 = open(DADOS_MPU9250, "w+")
   lines = ""
@@ -43,24 +45,39 @@ def get_exec_output():
   sensor_reads = {}
   module_writes = {}
   for output in o.split("\n")[1:-1]:
-    tokens = output.split(" - ")
-    ms = int(tokens[0][:-2])
-    if "read" in output:
-      text = tokens[1]
-      reading = float(tokens[3])
-      if text not in sensor_reads:
-        sensor_reads[text] = []
-      sensor_reads[text].append((ms, reading))
-    elif "write" in output:
-      text = tokens[1] + " write " + tokens[3]
-      if text not in module_writes:
-        module_writes[text] = []
-      module_writes[text].append(ms)
+    if output.startswith("[BANCADA_TESTES_LOG]"):
+      # É read ou write
+      output = output.replace("[BANCADA_TESTES_LOG] ", "")
+      tokens = output.split(" - ")
+      desc = tokens[0]
+      log_type = tokens[1] # read/write
+      value = float(tokens[2])
+      ms = float(tokens[3][:-2])
+      
+      if log_type == "write":
+        # É write
+        text = desc + " - " + str(value)
+        if text not in module_writes:
+          module_writes[text] = []
+        module_writes[text].append(ms)
+      elif log_type == "read":
+        # É read
+        text = desc
+        if text not in sensor_reads:
+          sensor_reads[text] = []
+        sensor_reads[text].append((ms, value))
+
     else:
-      text = tokens[1]
-      if text not in events:
-        events[text] = []
-      events[text].append(ms)
+      # É um evento
+      output = output.replace("[BANCADA_TESTES_LOG] ", "")
+      tokens = output.split(" - ")
+      desc = tokens[0]
+      ms = float(tokens[1][:-2])
+
+      if desc not in events:
+        events[desc] = []
+      events[desc].append(ms)
+      
   return events, sensor_reads, module_writes
 
 # Vários plots
@@ -71,7 +88,7 @@ def plot_dados_brutos():
     xs.append(int(line.split(" ")[0]))
     ax, ay, az = float(line.split(" ")[1]), float(line.split(" ")[2]), float(line.split(" ")[3])
     acel.append((ax**2 + ay**2 + az**2)**(1/2))
-  plt.plot(xs, acel, label="Aceleração absoluta bruta do arquivo", alpha=0.45, zorder=1)
+  plt.plot(xs, acel, label="Aceleracao absoluta bruta do arquivo", alpha=0.45, zorder=1)
 
 def plot_leitura_sensores(ins):
   for name in ins:
@@ -98,7 +115,7 @@ def plot_eventos(events, xmin, xmax, ymin, ymax):
 gerar_dados()
 
 events, ins, outs = get_exec_output()
-plot_dados_brutos()
+# plot_dados_brutos()
 plot_leitura_sensores(ins)
 
 xmin, xmax, ymin, ymax = plt.axis()
@@ -106,7 +123,7 @@ plot_escrita_modulos(outs, xmin, xmax, ymin, ymax)
 plot_eventos(events, xmin, xmax, ymin, ymax)
 
 plt.legend(loc="upper right")
-plt.ylabel("Aceleração absoluta medida pelo acelerômetro (m/s²)")
+plt.ylabel("Aceleracao absoluta medida pelo acelerometro (m/s2)")
 plt.xlabel("Tempo (ms)")
 plt.suptitle("Comportamento do PC de Bordo")
 plt.show()

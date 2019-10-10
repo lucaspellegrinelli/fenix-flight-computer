@@ -6,7 +6,7 @@
 #include "filtro_kalman.h"
 
 /* ------- DEFINIÇÃO DE CONSTANTES -------- */
-// Se a aceleração for <= a esse valor, interpretaremos como aceleração 0 (fim da propulsão).
+// Se a aceleração (em g) for <= a esse valor, interpretaremos como aceleração 0 (fim da propulsão).
 #define FAIXA_ACELERACAO_NULA 0.15
 // Tempo de precaução de ejeção pós fim da propulsão caso o apogeu não seja detectado
 #define TEMPO_EJECAO_POS_FIM_PROPULSAO 6000
@@ -30,11 +30,6 @@ void teste_fim_propulsao();
 void teste_apogeu();
 void ejetar();
 
-/* ------- DEFINIÇÃO DE FUNÇÕES DE LOG -------- */
-void relatar_leitura(std::string descricao, float valor);
-void relatar_evento(std::string descricao);
-void relatar_escrita(std::string descricao, float valor);
-
 /* ------- DEFINIÇÃO DO MÉTODO SETUP -------- */
 void setup() {
   Serial.begin(115200);
@@ -54,8 +49,6 @@ void setup() {
 void loop(){
   atualizar_leituras_imu();
 
-  relatar_leitura("Aceleração lida com Kalman", aceleracao_absoluta * 9.80665);
-
   teste_fim_propulsao();
   teste_apogeu();
 
@@ -73,7 +66,7 @@ void atualizar_leituras_imu(){
 
 void teste_fim_propulsao(){
   if(!fim_propulsao && aceleracao_absoluta < FAIXA_ACELERACAO_NULA){
-    relatar_evento("Fim da propulsão detectado");
+    Serial.println("Fim da propulsao detectado");
     fim_propulsao = true;
     ms_fim_propulsao = millis();
   }
@@ -84,7 +77,7 @@ void teste_apogeu(){
 
   int ms_depois_fim_prop = millis() - ms_fim_propulsao;
   if(ms_depois_fim_prop > TEMPO_EJECAO_POS_FIM_PROPULSAO){
-    relatar_evento("Ejeção iniciada por tempo pós propulsão");
+    Serial.println("Ejecao iniciada por tempo pos propulsao");
     ejetar();
   }
 }
@@ -93,32 +86,5 @@ void ejetar(){
   if(!ejecao_disparada){
     ejecao_disparada = true;
     servo.write(10);
-    relatar_escrita("Servo [pin 9]", 10);
   }
-}
-
-/* ------- DEFINIÇÃO DE FUNÇÕES DE LOG -------- */
-void relatar_evento(std::string descricao){
-  // 0ms - Descricao
-  Serial.print(current_ms);
-  Serial.print("ms - ");
-  Serial.println(descricao);
-}
-
-void relatar_leitura(std::string descricao, float valor){
-  // 0ms - Descricao - read - 0.2234343
-  Serial.print(current_ms);
-  Serial.print("ms - ");
-  Serial.print(descricao);
-  Serial.print(" - read - ");
-  Serial.println(valor);
-}
-
-void relatar_escrita(std::string descricao, float valor){
-  // 0ms - Descricao - write - 0.2234343
-  Serial.print(current_ms);
-  Serial.print("ms - ");
-  Serial.print(descricao);
-  Serial.print(" - write - ");
-  Serial.println(valor);
 }
