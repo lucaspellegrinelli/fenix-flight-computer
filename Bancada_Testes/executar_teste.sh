@@ -9,7 +9,9 @@ make clean
 
 # Copia o arquivo .ino para um .cpp nessa pasta para a compilação
 cp ../PC_Bordo/PC_Bordo.ino pc_bordo.cpp
-cp -a ../PC_Bordo/Bibliotecas\ Necessárias/Filtro_Kalman/. arduino_simulated_code/lib
+
+# Copia a biblioteca do Filtro Kalman para o Arduino/lib
+cp -a ../PC_Bordo/Bibliotecas\ Necessárias/Filtro_Kalman/. Arduino/lib
 
 # Adiciona o import das constantes modificadas do Arduino no início do arquivo
 echo '#include "arduino_consts.h"' | cat - pc_bordo.cpp > temp && mv temp pc_bordo.cpp
@@ -22,7 +24,7 @@ make
 
 # Deleta a cópia .cpp que criamos do arquivo .ino
 rm -f pc_bordo.cpp
-rm -rf arduino_simulated_code/lib
+rm -rf Arduino/lib
 
 # Executa os testes
 ./bancada

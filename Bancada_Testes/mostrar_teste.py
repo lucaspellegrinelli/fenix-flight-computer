@@ -4,32 +4,41 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-colorblind')
 
+
+SHELL_EXECUTAR_TESTE = "executar_teste.sh"
+DADOS_MPU9250 = "Dados/mpu9250.txt"
+
+
 # Gera os dados de aceleração simulando os testes do vídeo
 # https://www.youtube.com/watch?v=7WYBVW2gnr8
-def gerar_dados(noise):
-  f_mpu9250 = open("Dados/mpu9250.txt", "w+")
-  lines = ""
-  for i in range(0, 15000, 20):
-    if i < 1000:
-      acel = [0, 0, 0]
-    elif i < 3000:
-      x = (i - 1000) / 2000
-      acel = [0, 103.88*x**3 - 143.81*x**2 - 20.23*x + 49.54, 0]
+def gerar_dados():
+  def gerar_acel_y(t):
+    if t < 1000:
+      return 9.8
+    elif t < 3000:
+      x = (t - 1000) / 2000
+      return 103.88*x**3 - 143.81*x**2 - 20.23*x + 49.54 + 9.8
     else:
-      acel = [0, -9.8, 0]
-    acel[1] += 9.8 # Correcao do acelerometro
+      return 0
+
+  f_mpu9250 = open(DADOS_MPU9250, "w+")
+  lines = ""
+  for t in range(0, 15000, 20): # A cada 20ms em 15 segundos
+    acel = [0, gerar_acel_y(t), 0]
     # acel[1] += np.random.poisson(5, 1)[0] - 5 # Adiciona ruído
+
     acel_str = " ".join(str(a) for a in acel)
     rot_str = " ".join(str(a) for a in [0, 0, 0])
     orien_str = " ".join(str(a) for a in [0, 0, 0])
     temp = str(0)
-    line = str(i) + " " + acel_str + " " + rot_str + " " + orien_str + " " + temp + "\n"
-    lines += line
+
+    lines += str(t) + " " + acel_str + " " + rot_str + " " + orien_str + " " + temp + "\n"
+
   f_mpu9250.write(lines)
 
 # Faz a mágica de compilar o .ino em um .cpp, executa e pega o output
 def get_exec_output():
-  o = os.popen('./exec_teste.sh').read()
+  o = os.popen('./' + SHELL_EXECUTAR_TESTE).read()
   events = {}
   sensor_reads = {}
   module_writes = {}
@@ -57,7 +66,7 @@ def get_exec_output():
 # Vários plots
 def plot_dados_brutos():
   xs, acel = [], []
-  f_mpu9250 = open("Dados/mpu9250.txt", "r")
+  f_mpu9250 = open(DADOS_MPU9250, "r")
   for line in f_mpu9250.readlines():
     xs.append(int(line.split(" ")[0]))
     ax, ay, az = float(line.split(" ")[1]), float(line.split(" ")[2]), float(line.split(" ")[3])
@@ -86,7 +95,7 @@ def plot_eventos(events, xmin, xmax, ymin, ymax):
                verticalalignment='top', color="#262626", fontsize=9)
 
 # Executando
-gerar_dados(5)
+gerar_dados()
 
 events, ins, outs = get_exec_output()
 plot_dados_brutos()
