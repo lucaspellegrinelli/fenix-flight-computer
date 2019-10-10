@@ -6,8 +6,8 @@
 #include "filtro_kalman.h"
 
 /* ------- DEFINIÇÃO DE CONSTANTES -------- */
-#define FAIXA_ACELERACAO_APOGEU 0.15
-#define TEMPO_EJECAO_POS_APOGEU 500
+#define FAIXA_ACELERACAO_NULA 0.3
+#define TEMPO_EJECAO_POS_FIM_PROPULSAO 6000 // Tempo de precaução de ejeção pós fim da propulsão caso o apogeu não seja detectado
 
 /* ------- DEFINIÇÃO DE OBJETOS DE MÓDULOS -------- */
 MPU9250 IMU(Wire, 0x68);
@@ -19,12 +19,14 @@ double aceleracao_absoluta = 1;
 
 /* ------- DEFINIÇÃO DE VARIÁVEIS PARA CONTROLE DE APOGEU -------- */
 bool ejecao_disparada = false;
-bool apogeu_pendente = false;
-unsigned long ms_apogeu = -1;
+bool fim_propulsao = false;
+unsigned long ms_fim_propulsao = -1;
 
 /* ------- DEFINIÇÃO DE FUNÇÕES FUTURAS -------- */
 void atualizar_leituras_imu();
-bool is_apogeu();
+void teste_fim_propulsao();
+void teste_apogeu();
+void ejetar();
 
 /* ------- DEFINIÇÃO DE FUNÇÕES DE LOG -------- */
 void relatar_leitura(std::string descricao, float valor);
@@ -52,11 +54,8 @@ void loop(){
 
   relatar_leitura("Aceleração absoluta com Kalman", aceleracao_absoluta * 9.80665);
 
-  if(is_apogeu() && !ejecao_disparada){
-    ejecao_disparada = true;
-    servo.write(10);
-    relatar_escrita("Servo [pin 9]", 10);
-  }
+  teste_fim_propulsao();
+  teste_apogeu();
 
   delay(20);
 }
@@ -70,17 +69,29 @@ void atualizar_leituras_imu(){
   aceleracao_absoluta = MPU9250_ABS_ACEL_KALMAN->valor;
 }
 
-bool is_apogeu(){
-  if(!apogeu_pendente && aceleracao_absoluta < FAIXA_ACELERACAO_APOGEU){
-    relatar_evento("Apogeu detectado");
-
-    apogeu_pendente = true;
-    ms_apogeu = millis();
-    return false;
+void teste_fim_propulsao(){
+  if(!fim_propulsao && aceleracao_absoluta < FAIXA_ACELERACAO_NULA){
+    relatar_evento("Fim da propulsão detectado");
+    fim_propulsao = true;
+    ms_fim_propulsao = millis();
   }
+}
 
-  if(apogeu_pendente && (millis() - ms_apogeu) >= TEMPO_EJECAO_POS_APOGEU){
-    return true;
+void teste_apogeu(){
+  if(!fim_propulsao || ejecao_disparada) return;
+
+  int ms_depois_fim_prop = millis() - ms_fim_propulsao;
+  if(ms_depois_fim_prop > TEMPO_EJECAO_POS_FIM_PROPULSAO){
+    relatar_evento("Ejeção iniciada por tempo pós propulsão");
+    ejetar();
+  }
+}
+
+void ejetar(){
+  if(!ejecao_disparada){
+    ejecao_disparada = true;
+    servo.write(10);
+    relatar_escrita("Servo [pin 9]", 10);
   }
 }
 
