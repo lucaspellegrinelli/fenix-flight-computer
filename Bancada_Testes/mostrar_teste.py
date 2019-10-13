@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 
 import os
 import random
@@ -6,10 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-colorblind')
 
-
 SHELL_EXECUTAR_TESTE = "executar_teste.sh"
 DADOS_MPU9250 = "Dados/mpu9250.txt"
-
+DADOS_BMP180 = "Dados/bmp180.txt"
+NOISE = 20
 
 # Gera os dados de aceleração simulando os testes do vídeo
 # https://www.youtube.com/watch?v=7WYBVW2gnr8
@@ -23,11 +23,12 @@ def gerar_dados():
     else:
       return 0.0
 
+  velocidade = [0]
   f_mpu9250 = open(DADOS_MPU9250, "w+")
   lines = ""
   for t in range(0, 15000, 20): # A cada 20ms em 15 segundos
     acel = [0, gerar_acel_y(t), 0]
-    # acel[1] += np.random.poisson(5, 1)[0] - 5 # Adiciona ruído
+    acel[1] += np.random.poisson(NOISE, 1)[0] - NOISE # Adiciona ruído
 
     acel_str = " ".join(str(a) for a in acel)
     rot_str = " ".join(str(a) for a in [0, 0, 0])
@@ -36,7 +37,21 @@ def gerar_dados():
 
     lines += str(t) + " " + acel_str + " " + rot_str + " " + orien_str + " " + temp + "\n"
 
+    velocidade.append(velocidade[-1] + (gerar_acel_y(t) - 9.8) * 0.02)
+
   f_mpu9250.write(lines)
+
+  altitude = [velocidade[0]]
+  for vel in velocidade:
+    altitude.append(max(0, altitude[-1] + vel * 0.02))
+
+  altitude = [i + np.random.poisson(NOISE, 1)[0] - NOISE for i in altitude]
+
+  s_bmp = ""
+  f_bmp180 = open(DADOS_BMP180, "w+")
+  for i, alt in enumerate(altitude):
+    s_bmp += str(i * 20) + " " + str(alt) + " 0" + " \n"
+  f_bmp180.write(s_bmp)
 
 # Faz a mágica de compilar o .ino em um .cpp, executa e pega o output
 def get_exec_output():
@@ -53,7 +68,7 @@ def get_exec_output():
       log_type = tokens[1] # read/write
       value = float(tokens[2])
       ms = float(tokens[3][:-2])
-      
+
       if log_type == "write":
         # É write
         text = desc + " - " + str(value)
@@ -77,7 +92,7 @@ def get_exec_output():
       if desc not in events:
         events[desc] = []
       events[desc].append(ms)
-      
+
   return events, sensor_reads, module_writes
 
 # Vários plots
@@ -93,7 +108,7 @@ def plot_dados_brutos():
 def plot_leitura_sensores(ins):
   for name in ins:
     xs, ys = zip(*ins[name])
-    plt.plot(xs, ys, label=name, linewidth=2.5, zorder=1)
+    plt.plot(xs[1:], ys[1:], label=name, linewidth=2, zorder=1)
 
 def plot_escrita_modulos(outs, xmin, xmax, ymin, ymax):
   line_sp = (xmax - xmin) / 200
@@ -123,7 +138,7 @@ plot_escrita_modulos(outs, xmin, xmax, ymin, ymax)
 plot_eventos(events, xmin, xmax, ymin, ymax)
 
 plt.legend(loc="upper right")
-plt.ylabel("Aceleracao absoluta medida pelo acelerometro (m/s2)")
+plt.ylabel("Medições (m)")
 plt.xlabel("Tempo (ms)")
 plt.suptitle("Comportamento do PC de Bordo")
 plt.show()

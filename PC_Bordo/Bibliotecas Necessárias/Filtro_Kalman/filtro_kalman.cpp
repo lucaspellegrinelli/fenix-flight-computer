@@ -17,9 +17,9 @@ EstadoKalman* FiltroKalman::inicializar(float valor_inicial){
 }
 
 void FiltroKalman::atualizar(EstadoKalman* estado, float medicao){
-  medicao *= MS2_PARA_G;
+  // https://www.kalmanfilter.net/kalman1d.html
   estado->erro_cov = estado->erro_cov + estado->ruido_cov_processado;
   estado->ganho_kalman = estado->erro_cov / (estado->erro_cov + estado->ruido_cov_bruto);
-  estado->valor = estado->ganho_kalman * (medicao - estado->valor) + estado->valor;
+  estado->valor = estado->valor + estado->ganho_kalman * (medicao - estado->valor);
   estado->erro_cov = (1 - estado->ganho_kalman) * estado->erro_cov;
 }

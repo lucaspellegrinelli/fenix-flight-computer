@@ -5,8 +5,6 @@
 #define KALMAN_RUIDO_BRUTO 0.5
 #define KALMAN_RUIDO_PROCESADO 0.01
 
-#define MS2_PARA_G 0.101972
-
 #include <math.h>
 
 class EstadoKalman{

@@ -20,7 +20,7 @@ protected:
 	int refresh_clock_ms;
 	int last_read_i = 0;
 
-	void ler_sensor(float saida[]){
+	bool ler_sensor(float saida[]){
 		if(current_ms / refresh_clock_ms > last_read_i){
 			for(std::string line; getline(arquivo_leitura, line);){
 				std::vector<float> tokens;
@@ -39,6 +39,10 @@ protected:
 					break;
 				}
 			}
+
+			return true;
+		}else{
+			return false;
 		}
 	}
 };
