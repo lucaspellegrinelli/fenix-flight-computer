@@ -21,11 +21,11 @@ Adafruit_BMP085 bmp180;
 
 /* ------- DEFINIÇÃO DE VARIÁVEIS PARA MEDIÇÃO -------- */
 EstadoKalman* MPU9250_ABS_ACEL_KALMAN;
-EstadoKalman* BMP180_PRESSAO_KALMAN;
+EstadoKalman* BMP180_ALTITUDE_KALMAN;
 double aceleracao_absoluta = 9.8;
-double pressao_atual = -1;
-double pressao_var = -1;
-int contador_pressao = 0;
+double altitude_atual = -1;
+double altitude_var = -1;
+int contador_altitude = 0;
 
 /* ------- DEFINIÇÃO DE VARIÁVEIS PARA CONTROLE DE APOGEU -------- */
 bool ejecao_disparada = false;
@@ -54,7 +54,7 @@ void setup() {
   servo.attach(9);
 
   MPU9250_ABS_ACEL_KALMAN = FiltroKalman::inicializar(9.8);
-  BMP180_PRESSAO_KALMAN = FiltroKalman::inicializar(0);
+  BMP180_ALTITUDE_KALMAN = FiltroKalman::inicializar(0);
 }
 
 /* ------- DEFINIÇÃO DO MÉTODO LOOP -------- */
@@ -63,7 +63,7 @@ void loop(){
   atualizar_leituras_bmp180();
 
   relatar_leitura("Aceleracao processada", aceleracao_absoluta);
-  relatar_leitura("Pressao processada", pressao_atual);
+  relatar_leitura("Altitude processada", altitude_atual);
 
   teste_fim_propulsao();
   teste_apogeu();
@@ -81,11 +81,11 @@ void atualizar_leituras_gy91(){
 }
 
 void atualizar_leituras_bmp180(){
-  double pressao = bmp180.readPressure();
-  FiltroKalman::atualizar(BMP180_PRESSAO_KALMAN, pressao);
-  if(pressao_var == -1) pressao_var = 0;
-  else pressao_var = BMP180_PRESSAO_KALMAN->valor - pressao_atual;
-  pressao_atual = BMP180_PRESSAO_KALMAN->valor;
+  double altitude = bmp180.readAltitude(1013.25);
+  FiltroKalman::atualizar(BMP180_ALTITUDE_KALMAN, altitude);
+  if(altitude_var == -1) altitude_var = 0;
+  else altitude_var = BMP180_ALTITUDE_KALMAN->valor - altitude_atual;
+  altitude_atual = BMP180_ALTITUDE_KALMAN->valor;
 }
 
 void teste_fim_propulsao(){
@@ -99,10 +99,10 @@ void teste_fim_propulsao(){
 void teste_apogeu(){
   if(!fim_propulsao || ejecao_disparada) return;
 
-  if(pressao_var < 0) contador_pressao++;
-  else contador_pressao = 0;
+  if(altitude_var < 0) contador_altitude++;
+  else contador_altitude = 0;
 
-  if(contador_pressao >= MIN_CONTADOR_PRESSAO_APOGEU){
+  if(contador_altitude >= MIN_CONTADOR_PRESSAO_APOGEU){
     Serial.println("Ejeção iniciada por pressão caindo");
     ejetar();
   }

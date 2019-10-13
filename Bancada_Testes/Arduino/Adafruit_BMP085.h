@@ -32,6 +32,12 @@ public:
 
   float readPressure(){
     this->readSensor();
+    relatar_leitura("Pressao", this->pressao);
+    return this->pressao;
+  }
+
+  float readAltitude(float sea_level){
+    this->readSensor();
     relatar_leitura("Altitude", this->pressao);
     return this->pressao;
   }
