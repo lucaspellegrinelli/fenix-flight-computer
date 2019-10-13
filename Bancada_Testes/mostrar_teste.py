@@ -50,7 +50,7 @@ def gerar_dados():
   s_bmp = ""
   f_bmp180 = open(DADOS_BMP180, "w+")
   for i, alt in enumerate(altitude):
-    s_bmp += str(i * 20) + " " + str(alt) + " 0" + " \n"
+    s_bmp += str(i * 20) + " " + str(alt) + " " + str(random.uniform(23.5, 26.5)) + " \n"
   f_bmp180.write(s_bmp)
 
 # Faz a mágica de compilar o .ino em um .cpp, executa e pega o output

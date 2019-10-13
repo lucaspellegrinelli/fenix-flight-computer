@@ -4,10 +4,10 @@ EstadoKalman::EstadoKalman(){ }
 
 EstadoKalman::EstadoKalman(float valor, float erro_cov, float ruido_cov_bruto, float ruido_cov_processado){
   this->valor = valor;
-  this->ganho_kalman = 0;
   this->erro_cov = erro_cov;
   this->ruido_cov_bruto = ruido_cov_bruto;
   this->ruido_cov_processado = ruido_cov_processado;
+  this->ganho_kalman = this->erro_cov / (this->erro_cov + this->ruido_cov_bruto);
 }
 
 FiltroKalman::FiltroKalman(){ }
