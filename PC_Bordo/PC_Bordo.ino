@@ -74,6 +74,7 @@ void loop(){
   atualizar_leituras_gy91();
   atualizar_leituras_bmp180();
 
+  // Tempo para as leituras se acalmarem
   if(millis() - ms_inicio_arduino >= 100){
     relatar_leitura("Aceleracao processada", aceleracao_absoluta);
     relatar_leitura("Altitude processada", altitude_atual);

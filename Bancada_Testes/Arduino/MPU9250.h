@@ -15,6 +15,7 @@
   artificial e será o output da função "IMU.getAccelX_mss()".
 */
 
+#include <math.h>
 #include "SensorFalso.h"
 
 class MPU9250 : public SensorFalso{
@@ -60,7 +61,8 @@ public:
     this->orie_z = leituras[9];
     this->temperatura = leituras[10];
 
-    relatar_leitura("Aceleracao bruta", acel_y);
+    float acel = sqrt(pow(this->acel_x, 2.0) + pow(this->acel_y, 2.0) + pow(this->acel_z, 2.0));
+    relatar_leitura("Aceleracao", acel);
 
     delete leituras;
   }
