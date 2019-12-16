@@ -1,163 +1,140 @@
-#include <math.h>
-#include <string>
+// Comente isso caso a ideia seja o "deploy" final. Caso você quiser ver logs
+// do programa no Monitor Serial, deixe essa linha em paz.
+#define PC_ENV
 
-#include "Adafruit_BMP085.h"
-#include "MPU9250.h"
-#include "Servo.h"
-#include "filtro_kalman.h"
+// Protocolos de comunicação (Wire.h para I2C e SPI.h para SPI)
+#include <Wire.h>
+#include <SPI.h>
 
-/* ------- DEFINIÇÃO DE CONSTANTES -------- */
-// Se a aceleração (em m/s^2) for <= a esse valor, interpretaremos como aceleração 0 (fim da propulsão).
-#define FAIXA_ACELERACAO_NULA 3.33
-// Tempo de precaução de ejeção pós fim da propulsão caso o apogeu não seja detectado
-#define TEMPO_EJECAO_POS_FIM_PROPULSAO 6000
-// Define o quantos loops a pressão tem que cair para o apice ser detectado
-#define MIN_CONTADOR_PRESSAO_APOGEU 5
-// Tempo que esperaramos pós a detecção do apogeu para acionar o sistema de ejeção
-#define DELAY_EJECAO_POS_APOGEU 1000
+// Componentes
+#include <SD.h>
+#include <Servo.h>
+#include "i2c.h"
+#include "i2c_MPU9250.h"
+#include "i2c_BMP280.h"
 
-/* ------- DEFINIÇÃO DE OBJETOS DE MÓDULOS -------- */
-MPU9250 gy91(Wire, 0x68);
-Servo servo;
-Adafruit_BMP085 bmp180;
+// Definição de PINs
+#define SD_PIN 10
 
-/* ------- DEFINIÇÃO DE VARIÁVEIS PARA MEDIÇÃO -------- */
-EstadoKalman* MPU9250_ABS_ACEL_KALMAN;
-EstadoKalman* BMP180_ALTITUDE_KALMAN;
-EstadoKalman* BMP180_TEMPERATURA_KALMAN;
-double temperatura_atual = 25.0;
-double aceleracao_absoluta = 9.8;
-double altitude_atual = -1.0;
-double altitude_var = -1.0;
-int contador_altitude = 0;
+// Definição de constantes
+#define QUEDA_MINIMA_PARA_EJECAO_M 10 // Quantos metros o foguete precisa cair para que o paraquedas seja acionado
+#define QTD_MEDICOES_ESTABILIZADORAS 10 // Quantas medidas depois do inicio do arduino serão descartadas
 
-/* ------- DEFINIÇÃO DE VARIÁVEIS PARA CONTROLE DE APOGEU -------- */
-bool ejecao_disparada = false;
-bool apogeu_detectado = false;
-bool fim_propulsao = false;
-unsigned long ms_fim_propulsao = -1;
-unsigned long ms_apogeu_detectado = -1;
-unsigned long ms_inicio_arduino = -1;
+// Declaração de objetos
+BMP280 bmp280;
+MPU9250 mpu9250;
+Servo fred;
+File arquivo_saida;
 
-/* ------- DEFINIÇÃO DE FUNÇÕES FUTURAS -------- */
-void atualizar_leituras_gy91();
-void atualizar_leituras_bmp180();
-void teste_fim_propulsao();
-void teste_apogeu();
-void detectar_apogeu();
-void teste_ejecao();
-void ejetar();
+// Declaração de variáveis
+int contador_medicoes = 0;
+int nome_arquivo = -1;
+float maior_altitude = -9999.0f;
 
-/* ------- DEFINIÇÃO DO MÉTODO SETUP -------- */
-void setup() {
-  ms_inicio_arduino = millis();
+// A ideia desses vetores é retirar a necessidade de abrir, escrever e fechar o arquivo
+// de saída em toda iteração do "loop". Com essa ideia, vamos salvando nesses vetores
+// várias medições, e quando os vetores encherem, nós escrevemos todas as medições de uma
+// vez e começamos denovo. Tempo de salvar em um vetor <<<<<<< Tempo de salvar no SD.
+// O arduino nano tem pouca memória. Quero que os vetores a seguir não passem de
+// 512 btes de tamanho, ou seja, cada um tem 256 bytes. Como cada float tem
+// 4 bytes, 256 / 4 = 64 posições em cada vetor. Para segurança diminui de 64 para 48.
+#define TAMANHO_VETORES 48
+float aceleracoes[TAMANHO_VETORES];
+float altitudes[TAMANHO_VETORES];
+int pos_atual = 0;
 
-  Serial.begin(115200);
+void setup() { 
+  // Inicializa os componentes
+  bool sd_success = SD.begin(SD_PIN);
+  mpu9250.initialize();
+  bmp280.initialize();
+  bmp280.setEnabled(0);
+  bmp280.triggerMeasurement();
 
-  gy91.begin();
-  gy91.setAccelRange(MPU9250::ACCEL_RANGE_8G);
-  gy91.setGyroRange(MPU9250::GYRO_RANGE_500DPS);
-  gy91.setDlpfBandwidth(MPU9250::DLPF_BANDWIDTH_20HZ);
-  gy91.setSrd(19);
+  // Define o nome do arquivo atual
+  nome_arquivo = random(999999);
 
-  bmp180.begin();
-
-  servo.attach(9);
-
-  MPU9250_ABS_ACEL_KALMAN = FiltroKalman::inicializar(9.8);
-  BMP180_ALTITUDE_KALMAN = FiltroKalman::inicializar(0);
-  BMP180_TEMPERATURA_KALMAN = FiltroKalman::inicializar(25);
-}
-
-/* ------- DEFINIÇÃO DO MÉTODO LOOP -------- */
-void loop(){
-  atualizar_leituras_gy91();
-  atualizar_leituras_bmp180();
-
-  // Tempo para as leituras se acalmarem
-  if(millis() - ms_inicio_arduino >= 100){
-    relatar_leitura("Aceleracao processada", aceleracao_absoluta);
-    relatar_leitura("Altitude processada", altitude_atual);
-    relatar_leitura("Temperatura processada", temperatura_atual);
-
-    teste_fim_propulsao();
-    teste_apogeu();
-    teste_ejecao();
-  }
-
-  delay(20);
-}
-
-/* ------- DEFINIÇÃO DAS FUNÇÕES FUTURAS -------- */
-void atualizar_leituras_gy91(){
-  gy91.readSensor();
-  double acel[3] = {gy91.getAccelX_mss(), gy91.getAccelY_mss(), gy91.getAccelZ_mss()};
-  double abs_acel = sqrt(pow(acel[0], 2.0) + pow(acel[1], 2.0) + pow(acel[2], 2.0));
-  FiltroKalman::atualizar(MPU9250_ABS_ACEL_KALMAN, abs_acel);
-  aceleracao_absoluta = MPU9250_ABS_ACEL_KALMAN->valor;
-}
-
-void atualizar_leituras_bmp180(){
-  double altitude = bmp180.readAltitude(1013.25);
-  FiltroKalman::atualizar(BMP180_ALTITUDE_KALMAN, altitude);
-  if(altitude_var == -1) altitude_var = 0;
-  else altitude_var = BMP180_ALTITUDE_KALMAN->valor - altitude_atual;
-  altitude_atual = BMP180_ALTITUDE_KALMAN->valor;
-
-  double temperatura = bmp180.readTemperature();
-  FiltroKalman::atualizar(BMP180_TEMPERATURA_KALMAN, temperatura);
-  temperatura_atual = BMP180_TEMPERATURA_KALMAN->valor;
-}
-
-void teste_fim_propulsao(){
-  if(!fim_propulsao && aceleracao_absoluta < FAIXA_ACELERACAO_NULA){
-    Serial.println("Fim da propulsao detectado");
-    fim_propulsao = true;
-    ms_fim_propulsao = millis();
-  }
-}
-
-void teste_apogeu(){
-  if(!fim_propulsao || ejecao_disparada || apogeu_detectado) return;
-
-  if(altitude_var < 0) contador_altitude++;
-  else contador_altitude = 0;
-
-  if(contador_altitude >= MIN_CONTADOR_PRESSAO_APOGEU){
-    Serial.println("Apogeu detectado por pressão caindo");
-    detectar_apogeu();
-  }
-
-  unsigned long ms_depois_fim_prop = millis() - ms_fim_propulsao;
-  if(ms_depois_fim_prop > TEMPO_EJECAO_POS_FIM_PROPULSAO){
-    Serial.println("Ejecao disparada por tempo pos fim da propulsao");
-    apogeu_detectado = true;
-    ejetar(); // Nesse caso, como perdemos o apogeu, vamos ejetar direto
-  }
-}
-
-void detectar_apogeu(){
-  if(!apogeu_detectado){
-    apogeu_detectado = true;
-    ms_apogeu_detectado = millis();
-  }
-}
-
-void teste_ejecao(){
-  if(apogeu_detectado && !ejecao_disparada){
-    unsigned long ms_depois_apogeu = millis() - ms_apogeu_detectado;
-    if(ms_depois_apogeu > DELAY_EJECAO_POS_APOGEU){
-      ejetar();
+  // Se estivermos no PC, mostra na tela se deu para inicilizar o cartão SD
+  #ifdef PC_ENV
+    Serial.begin(9600);
+    if(!sd_success){
+      Serial.println("Módulo SD não pode ser inicializado");
+      while(true);
+    }else{
+      Serial.println("Módulo SD inicializado com sucesso");
     }
-  }
+  #endif
 }
+ 
+void loop() {
+  // Definição das variáveis que serão medidas
+  static float meters, xyz_GyrAccMag[9];
+  float temperature, pascal;
 
-void ejetar(){
-  if(apogeu_detectado && !ejecao_disparada){
-    ejecao_disparada = true;
-    Serial.print("Ejecao disparada ");
-    Serial.print(DELAY_EJECAO_POS_APOGEU / 1000);
-    Serial.println("s depois do apogeu");
-    servo.write(10);
+  // Medições
+  bmp280.awaitMeasurement();
+  bmp280.getTemperature(temperature);
+  bmp280.getPressure(pascal);
+  bmp280.getAltitude(meters);
+  bmp280.triggerMeasurement();
+  mpu9250.getMeasurement(xyz_GyrAccMag);
+
+  // Dê 10 medições para os valores iniciais se estabilizarem
+  if(contador_medicoes < QTD_MEDICOES_ESTABILIZADORAS){
+    contador_medicoes++;
+  }else{
+    // Se estivermos no PC, mostre na tela as variáveis lidas
+    #ifdef PC_ENV
+      Serial.print(xyz_GyrAccMag[0]);
+      Serial.print(" ");
+      Serial.print(xyz_GyrAccMag[1]);
+      Serial.print(" ");
+      Serial.print(xyz_GyrAccMag[2]);
+      Serial.print(" ");
+      Serial.println(meters);
+    #endif
+
+    // Salva os valores lidos em uma nova posição do vetor
+    aceleracoes[pos_atual] = sqrt(pow(xyz_GyrAccMag[0], 2) + pow(xyz_GyrAccMag[1], 2) + pow(xyz_GyrAccMag[2], 2));
+    altitudes[pos_atual] = meters;
+    pos_atual++;
+
+    // Checa se devemos acionar o sistema de ejeção
+    if(maior_altitude < meters){
+      maior_altitude = meters;
+    }else if(maior_altitude - meters >= QUEDA_MINIMA_PARA_EJECAO_M){
+      fred.attach(5);
+      fred.write(0);
+
+      #ifdef PC_ENV
+        Serial.println("Sistema de ejeção acionado");
+      #endif
+    }
+
+    // Se chegamos no limite de nosso vetor
+    if(pos_atual >= TAMANHO_VETORES){
+      // Cria/abre um arquivo de saída 
+      arquivo_saida = SD.open(String(String(nome_arquivo) + ".txt"), FILE_WRITE);
+      if(arquivo_saida){
+        // Coloca no arquivo as acelerações absolutas e altitudes lidas
+        for(int i = 0; i < TAMANHO_VETORES; i++){
+          Serial.print(aceleracoes[i]);
+          Serial.print(" ");
+          Serial.println(altitudes[i]);
+        }
+        
+        // Fecha o arquivo
+        arquivo_saida.close();
+
+        // Reseta o vetor
+        pos_atual = 0;
+      }else{
+        #ifdef PC_ENV
+          Serial.print("Problema ao abrir ");
+          Serial.print(nome_arquivo);
+          Serial.println(".txt");
+        #endif
+      }
+    }
   }
 }
